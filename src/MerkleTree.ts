@@ -4,7 +4,6 @@ import Base from './Base'
 import treeify from 'treeify'
 
 // TODO: Clean up and DRY up code
-// Disclaimer: The multiproof code is unaudited and may possibly contain serious issues. It's in a hacky state as is and it's begging for a rewrite!
 
 type TValue = Buffer | string | number | null | undefined
 type THashFnResult = Buffer | string
@@ -119,6 +118,63 @@ export class MerkleTree extends Base {
     this._createHashes(this.leaves)
   }
 
+  private processLeavesDynamic () {
+    if (this.hashLeaves) {
+      this.leaves = this.leaves.map(this.hashFn)
+    }
+    if (this.fillDefaultHash) {
+      for (let i = 0; i < Math.pow(2, Math.ceil(Math.log2(this.leaves.length))); i++) {
+        if (i >= this.leaves.length) {
+          this.leaves.push(this.bufferify(this.fillDefaultHash(i, this.hashFn)))
+        }
+      }
+    }
+    if (this.layers.length === 0) {
+      this.layers = [this.leaves]
+    } else {
+      this.layers[0] = this.leaves
+    }
+    this.recomputeHashes()
+  }
+
+  private recomputeHashes () {
+    const numLayers = this.layers.length
+    for (let index = 0; index < numLayers; index++) {
+      const currentLayer = this.layers[index]
+      let nextLayer = this.layers[index + 1]
+      const farRightNode = currentLayer[currentLayer.length - 1]
+      let data = null
+      let hash = null
+      if (currentLayer.length % 2 === 1) {
+        data = farRightNode
+        hash = data
+      } else {
+        data = [currentLayer[currentLayer.length - 2], farRightNode]
+        data = Buffer.concat(data)
+        hash = this.hashFn(data)
+      }
+      // Tree height increases
+      if (currentLayer.length > 1 && !nextLayer) {
+        this.layers.push([])
+        nextLayer = this.layers[index + 1]
+      }
+      // Everything is up to date
+      if (!nextLayer) {
+        break
+      }
+      // Should the next layer have a new node?
+      if (nextLayer.length < Math.ceil(currentLayer.length / 2)) {
+        if (nextLayer) {
+          nextLayer.push(hash)
+        } else {
+          this.layers.push([hash])
+        }
+      } else {
+        nextLayer[nextLayer.length - 1] = hash
+      }
+    }
+  }
+
   private _createHashes (nodes: any[]) {
     while (nodes.length > 1) {
       const layerIndex = this.layers.length
@@ -197,6 +253,24 @@ export class MerkleTree extends Base {
       leaf = this.hashFn(leaf)
     }
     this.processLeaves(this.leaves.concat(leaf))
+  }
+
+  /**
+   * addLeafDynamic
+   * @desc Adds a leaf to the tree and only re-calculates the affected hashes in the tree
+   * @param {String|Buffer} - Leaf
+   * @param {Boolean} - Set to true if the leaf should be hashed before being added to tree.
+   * @example
+   *```js
+   *tree.addLeafDynamic(newLeaf)
+   *```
+   */
+  addLeafDynamic (leaf: TLeaf, shouldHash: boolean = false) {
+    if (shouldHash) {
+      leaf = this.hashFn(leaf)
+    }
+    this.leaves.push(this.bufferify(leaf))
+    this.processLeavesDynamic()
   }
 
   /**

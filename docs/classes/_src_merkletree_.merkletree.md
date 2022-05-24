@@ -26,6 +26,7 @@ Class reprensenting a Merkle Tree
 * [_toTreeString](_src_merkletree_.merkletree.md#protected-_totreestring)
 * [_zip](_src_merkletree_.merkletree.md#protected-_zip)
 * [addLeaf](_src_merkletree_.merkletree.md#addleaf)
+* [addLeafDynamic](_src_merkletree_.merkletree.md#addleafdynamic)
 * [addLeaves](_src_merkletree_.merkletree.md#addleaves)
 * [bufferToHex](_src_merkletree_.merkletree.md#buffertohex)
 * [bufferify](_src_merkletree_.merkletree.md#bufferify)
@@ -234,6 +235,30 @@ addLeaf
 **`example`** 
 ```js
 tree.addLeaf(newLeaf)
+```
+
+**Parameters:**
+
+Name | Type | Default |
+------ | ------ | ------ |
+`leaf` | [TLeaf](../modules/_src_merkletree_.md#tleaf) | - |
+`shouldHash` | boolean | false |
+
+**Returns:** *void*
+
+___
+
+###  addLeafDynamic
+
+▸ **addLeafDynamic**(`leaf`: [TLeaf](../modules/_src_merkletree_.md#tleaf), `shouldHash`: boolean): *void*
+
+addLeafDynamic
+
+**`desc`** Adds a leaf to the tree and only re-calculates the affected hashes in the tree
+
+**`example`** 
+```js
+tree.addLeafDynamic(newLeaf)
 ```
 
 **Parameters:**
